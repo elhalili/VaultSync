@@ -4,10 +4,24 @@
 #include <time.h>
 #include<string.h>
 
-void logger(const char* tag, const char* message) {
+
+// TODO: take care of std output such as stderr, stdout
+// TODO: handle log file in .vaultsync
+void logger(enum LOGGING_TAG tag, const char* message) {
    time_t now;
    time(&now);
    char* time_now = ctime(&now);
    time_now[strlen(time_now) - 1] = 0;
-   printf("%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s\n", time_now, tag, message);
+   switch(tag) {
+      case INFO_TAG:
+         printf("%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s\n", time_now, "INFO", message);
+         break;
+      case ERROR_TAG:
+         fprintf(stderr, "%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s\n", time_now, "ERROR", message);
+         break;
+      case WARNING_TAG:
+         printf("%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s\n", time_now, "WARNING", message);
+         break;
+      default:
+   }
 }

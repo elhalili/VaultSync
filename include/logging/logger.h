@@ -17,11 +17,12 @@
 #define COLOR_OFF   "\e[m"
 
 // tags
-#define INFO_TAG "INFO"
-#define ERROR_TAG "error"
-#define WARNING_TAG "warning"
+enum LOGGING_TAG {
+    INFO_TAG = 1,
+    ERROR_TAG = 2,
+    WARNING_TAG = 3
+};
 
-
-void logger(const char* tag, const char* message);
+void logger(enum LOGGING_TAG tag, const char* message);
 
 #endif
