@@ -7,9 +7,7 @@ project(vaultsync C)
 set(CMAKE_C_STANDARD 11)
 
 # Source files
-set(SOURCES
-    src/main.c
-)
+file(GLOB_RECURSE SOURCES "src/*.c" "src/**/*.c")
 
 # Include directories
 include_directories(include)
@@ -23,11 +21,14 @@ target_include_directories(vaultsync_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/incl
 # Create the main executable
 add_executable(${PROJECT_NAME} src/main.c)
 
+# Compilation options
+target_compile_options(${PROJECT_NAME} PRIVATE)
+
 # Specify include directories for the main executable
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Link the main executable with the library
-target_link_libraries(${PROJECT_NAME} PRIVATE vaultsync_lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE vaultsync_lib ssl)
 
 # -------------------------------- test stuffs -----------------------------------
 # Testing with Unity
@@ -42,7 +43,7 @@ set(UNITY_SOURCES
 
 # Test files
 set(TEST_SOURCES
-
+    test/main_test.c
 )
 
 # Create a test executable

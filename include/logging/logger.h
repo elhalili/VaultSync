@@ -12,6 +12,7 @@
 #define KCYAN  "\x1B[36m"
 #define KWHITE  "\x1B[37m"
 
+
 // bolds
 #define COLOR_BOLD  "\e[1m"
 #define COLOR_OFF   "\e[m"
@@ -22,7 +23,5 @@ enum LOGGING_TAG {
     ERROR_TAG = 2,
     WARNING_TAG = 3
 };
-
-void logger(enum LOGGING_TAG tag, const char* message);
 
 #endif
