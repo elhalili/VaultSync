@@ -1,20 +1,19 @@
 #ifndef COMMIT_H
 #define COMMIT_H
 #include "author.h"
+#include "file.h"
+#include "repository.h"
+#include <openssl/sha.h>
 
-#define HASH_LEN 32
+#define HASH_LEN 2 * SHA256_DIGEST_LENGTH + 1
 #define TRACKED_DIR "tracked"
-// TODO: be careful
-#define MAX_LINE_LENGTH 1024
-#define MAX_PATH_LENGTH 512
-#define MAX_TRACKED_FILES 128
 
 
 struct commit {
     char* hash;
     struct author author;
     char* parent_hash;
-    char** files;
+    struct file_node* files;
 };
 
 // TODO: show differences, commits history... and all related stuffs
@@ -22,20 +21,15 @@ struct commit {
  * Initilize the commit
 */
 void init_commit(struct commit* commit);
+
 /**
  * Track files for a commit
 */
-void add_files(char** files);
+int add_files(struct repository *repo, struct file_node* files);
+
 /**
  * Persist the commit and preparing for the next one
 */
 void add_commit(struct commit* commit);
-/**
- * Extract tracked filenames 
-*/
-int extract_tracked_files(char** files, const char* track_path);
-/**
- * status of untracked files
-*/
-int get_status_untracked_files(char* cwd, char** tracked_files);
+
 #endif

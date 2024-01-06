@@ -4,20 +4,22 @@
 #define CONFIG_FILE "/config"
 #define REPOSITORY_FILE "/repository"
 #define LOG_FILE "/logs"
+#define MAX_REPOSITORY_FILE_INIT 1024
+#define MAX_CWD 4096
 
 #include "author.h"
 
 // TODO : add remote related info
 struct repository {
     struct author* author;
-    char* dir;
+    char dir[MAX_CWD];
     struct commit* last_commit;
 };
 
 /**
  * create the initial content when initializing
 */
-char* init_repo_content(struct repository* repo);
+void init_repo_content(struct repository* repo, char* buffer);
 /**
  * creating a repository object
 */
