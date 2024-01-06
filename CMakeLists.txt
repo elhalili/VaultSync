@@ -1,5 +1,3 @@
-# CMakeLists.txt for Secure File Synchronization Tool with Version Management
-
 cmake_minimum_required(VERSION 3.27)
 project(vaultsync C)
 
@@ -18,6 +16,9 @@ add_library(vaultsync_lib STATIC ${SOURCES})
 # Specify include directories for the library
 target_include_directories(vaultsync_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+# Find OpenSSL
+find_package(OpenSSL REQUIRED)
+
 # Create the main executable
 add_executable(${PROJECT_NAME} src/main.c)
 
@@ -27,8 +28,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE)
 # Specify include directories for the main executable
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Link the main executable with the library
-target_link_libraries(${PROJECT_NAME} PRIVATE vaultsync_lib ssl)
+# Link the main executable with the library and OpenSSL
+target_link_libraries(${PROJECT_NAME} PRIVATE vaultsync_lib OpenSSL::SSL OpenSSL::Crypto)
 
 # -------------------------------- test stuffs -----------------------------------
 # Testing with Unity

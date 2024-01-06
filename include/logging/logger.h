@@ -24,4 +24,7 @@ enum LOGGING_TAG {
     WARNING_TAG = 3
 };
 
+
+void logger(enum LOGGING_TAG tag, const char* message);
+
 #endif
