@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include<string.h>
+#include<errno.h>
 
 
 // TODO: take care of std output such as stderr, stdout
@@ -17,7 +18,7 @@ void logger(enum LOGGING_TAG tag, const char* message) {
          printf("%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s\n", time_now, "INFO", message);
          break;
       case ERROR_TAG:
-         fprintf(stderr, "%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s\n", time_now, "ERROR", message);
+         fprintf(stderr, "%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s (%s)\n", time_now, "ERROR", message, strerror(errno));
          break;
       case WARNING_TAG:
          printf("%s " COLOR_BOLD "[%s]" COLOR_OFF ": %s\n", time_now, "WARNING", message);
