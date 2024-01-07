@@ -173,3 +173,87 @@ int add_files(struct repository *repo, struct file_node* files) {
 
     return SUCCESS;
 }
+
+int init_commit(struct repository* repo, struct commit* commit, struct hash_map* map, const char* path) {
+    DIR *dir;
+    struct dirent *entry;
+
+    // init commit directory
+    char init_commit_dir[MAX_PATH];
+    strcpy(init_commit_dir, repo->dir);
+    strcat(init_commit_dir, "/.vsync/0/");
+
+    // Open the directory
+    dir = opendir(path);
+
+    // Check if the directory can be opened
+    if (dir == NULL) {
+        perror("Error opening directory");
+        exit(EXIT_FAILURE);
+    }
+
+    // Read each entry in the directory
+    while ((entry = readdir(dir)) != NULL) {
+        // Ignore "." and ".." directories
+        if (strcmp(entry->d_name, ".") != 0 
+            && strcmp(entry->d_name, "..") != 0
+            && strcmp(entry->d_name, ".vsync") != 0) {
+            // Construct the full path of the entry
+            char fullpath[PATH_MAX];
+            snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
+            // constructing the hash
+            // Set a seed for the random number generator
+            srand(time(NULL));
+
+            char random_data[RANDOM_SIZE];
+            generate_random_data(random_data, RANDOM_SIZE); 
+            // Generate hash from random data
+            char hash[HASH_LEN];
+            generate_hash(random_data, HASH_LEN, hash);
+            char hash_string[2 * SHA256_DIGEST_LENGTH + 1];  // +1 for null terminator
+            for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+                sprintf(&hash_string[2 * i], "%02x", hash[i]);
+            }
+            hash_string[HASH_LEN] = 0;
+            
+            // Open the source file for reading
+            FILE* source_file = fopen(fullpath, "rb");
+            if (source_file == NULL) {
+                logger(ERROR_TAG, "Can not copying the first commit");
+                return FAIL;
+            }
+
+            // Open the destination file for writing
+            char destination_path[strlen(init_commit_dir) + HASH_LEN];
+            strcpy(destination_path, init_commit_dir);
+            strcat(destination_path, hash_string);
+            FILE* destination_file = fopen(destination_path, "wb");
+            if (destination_file == NULL) {
+                logger(ERROR_TAG, "Error opening destination file");
+                fclose(source_file);
+                return FAIL;
+            }
+
+            // Copy the content of the source file to the destination file
+            char buffer[1024];
+            size_t bytesRead;
+            while ((bytesRead = fread(buffer, 1, sizeof(buffer), source_file)) > 0) {
+                fwrite(buffer, 1, bytesRead, destination_file);
+            }
+
+            insert_map(map, fullpath, hash_string);
+            // Close the files
+            fclose(source_file);
+            fclose(destination_file);
+            // If the entry is a directory, recursively call the function
+            if (entry->d_type == DT_DIR) {
+                init_commit(repo, commit, map, fullpath);
+            }
+        }
+    }
+
+    // Close the directory
+    closedir(dir);
+
+    return SUCCESS;
+}

@@ -1,7 +1,11 @@
 #ifndef HASHMAP_H
 #define HASHMAP_H
 
-#include "../../include/vm/file.h"
+#include <openssl/sha.h>
+
+#define MAX_PATH 128
+#define HASH_LEN 2 * SHA256_DIGEST_LENGTH + 1
+
 
 #define TABLE_SIZE 10
 

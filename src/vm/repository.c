@@ -60,6 +60,54 @@ int init_repo(struct repository* repo) {
     if (create_file(config_file, "") == FAIL) return FAIL;
     if (create_file(log_file, "") == FAIL) return FAIL;
 
+    // last step creating the initial commit
+
+    // make the first commit
+    struct commit* commit = (struct commit*) malloc(sizeof(struct commit));
+    commit->hash = "0";
+    commit->parent_hash = "-";
+    struct hash_map* map = (struct hash_map*)malloc(sizeof(struct hash_map));
+
+    // craeting the commit dir
+    char init_commit_dir[MAX_PATH];
+    strcpy(init_commit_dir, repo->dir);
+    strcat(init_commit_dir, "/.vsync/0");
+
+    // making the init commit directory
+    if (mkdir(init_commit_dir, 0777) != 0) {
+        logger(ERROR_TAG, "Can not create the initial commit dir");
+        return FAIL;
+    }
+
+    // initiale commit made
+    init_commit(repo, commit, map, repo->dir);
+
+    // saving info about the commit
+    char commit_info_path[MAX_CWD];
+    strcpy(commit_info_path, init_commit_dir);
+    strcat(commit_info_path, "/commit");
+
+    FILE* commit_info_file = fopen(commit_info_path, "w");
+    fprintf(commit_info_file, "-\n");
+
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        struct key_value* current = map->table[i];
+        while (current != NULL) {
+
+            // Add this to track file
+            char track_buffer[strlen(current->key) + strlen(current->value) + 2];
+            strcpy(track_buffer, current->key);
+            strcat(track_buffer, " ");
+            strcat(track_buffer, current->value);
+            strcat(track_buffer, "\n");
+            fprintf(commit_info_file, track_buffer);
+
+            current = current->next; // Move to the next entry in case of collisions
+        }
+    }
+
+    fclose(commit_info_file);
+
     return SUCCESS;
 }
 

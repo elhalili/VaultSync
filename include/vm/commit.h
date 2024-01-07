@@ -2,6 +2,7 @@
 #define COMMIT_H
 #include "author.h"
 #include "file.h"
+#include "hashmap.h"
 #include "repository.h"
 #include <openssl/sha.h>
 
@@ -13,15 +14,13 @@ struct commit {
     char* hash;
     struct author author;
     char* parent_hash;
-    struct file_node* files;
 };
 
 // TODO: show differences, commits history... and all related stuffs
 /**
- * Initilize the commit
+ * create the first commit
 */
-void init_commit(struct commit* commit);
-
+int init_commit(struct repository* repo, struct commit* commit, struct hash_map* map, const char* path);
 /**
  * Track files for a commit
 */
