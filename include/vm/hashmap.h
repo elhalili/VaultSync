@@ -3,7 +3,7 @@
 
 #include <openssl/sha.h>
 
-#define MAX_PATH 128
+#define MAX_PATH 1024
 #define HASH_LEN 2 * SHA256_DIGEST_LENGTH + 1
 
 
@@ -19,6 +19,8 @@ struct key_value {
 struct hash_map {
     struct key_value* table[TABLE_SIZE];
 };
+
+void init_hash_map(struct hash_map* map);
 
 /**
  * calculate a simple hash value for the key

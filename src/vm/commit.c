@@ -1,22 +1,20 @@
-#include "../../include/common.h"
+#include "../../include/vm/common.h"
 #include "../../include/vm/commit.h"
 #include "../../include/logging/logger.h"
 #include "../../include/vm/hashmap.h"
-#include "../../include/crypto/hashing.h"
-#include "../crypto/hashing.c"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <stdarg.h>
 
 int add_files(struct repository *repo, struct file_node* files) {
     // step1: check if track file is exist -> if not create it
     char track_dir[strlen(repo->dir) + 23];
     strcpy(track_dir, repo->dir);
     strcat(track_dir, "/.vsync");
-
     // check if .vsync exists
     DIR* dir = opendir(track_dir);
     if (dir == NULL)
@@ -26,8 +24,7 @@ int add_files(struct repository *repo, struct file_node* files) {
     }
     closedir(dir);
 
-    strcat(track_dir, "/tracked");
-    
+    strcat(track_dir, "/tracked"); 
     // check if tracked exists
     dir = opendir(track_dir);
     if (dir == NULL)
@@ -89,19 +86,9 @@ int add_files(struct repository *repo, struct file_node* files) {
             delete_from_map(map, trav->path);
         }
         
-        // Set a seed for the random number generator
-        srand(time(NULL));
-
-        char random_data[RANDOM_SIZE];
-        generate_random_data(random_data, RANDOM_SIZE); 
-        // Generate hash from random data
-        char hash[HASH_LEN];
-        generate_hash(random_data, HASH_LEN, hash);
+        // generate the hash
         char hash_string[2 * SHA256_DIGEST_LENGTH + 1];  // +1 for null terminator
-        for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-            sprintf(&hash_string[2 * i], "%02x", hash[i]);
-        }
-        hash_string[HASH_LEN] = 0;
+        generate_hash(hash_string);
         insert_map(map, trav->path, hash_string);
 
         trav = trav->next;
@@ -114,7 +101,6 @@ int add_files(struct repository *repo, struct file_node* files) {
     strcpy(track_file_path, repo->dir);
     strcat(track_file_path, "/.vsync/tracked/track");
     FILE* track_File = fopen(track_file_path, "w");
-    printf("track : %s", track_file_path);
     if (track_File == NULL) 
     {
         logger(ERROR_TAG, "Can not persist changes");
@@ -201,20 +187,10 @@ int init_commit(struct repository* repo, struct commit* commit, struct hash_map*
             // Construct the full path of the entry
             char fullpath[PATH_MAX];
             snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
-            // constructing the hash
-            // Set a seed for the random number generator
-            srand(time(NULL));
-
-            char random_data[RANDOM_SIZE];
-            generate_random_data(random_data, RANDOM_SIZE); 
-            // Generate hash from random data
-            char hash[HASH_LEN];
-            generate_hash(random_data, HASH_LEN, hash);
+            
+            // generate the hash
             char hash_string[2 * SHA256_DIGEST_LENGTH + 1];  // +1 for null terminator
-            for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-                sprintf(&hash_string[2 * i], "%02x", hash[i]);
-            }
-            hash_string[HASH_LEN] = 0;
+            generate_hash(hash_string);
             
             // Open the source file for reading
             FILE* source_file = fopen(fullpath, "rb");
@@ -241,6 +217,7 @@ int init_commit(struct repository* repo, struct commit* commit, struct hash_map*
                 fwrite(buffer, 1, bytesRead, destination_file);
             }
 
+
             insert_map(map, fullpath, hash_string);
             // Close the files
             fclose(source_file);
@@ -252,8 +229,238 @@ int init_commit(struct repository* repo, struct commit* commit, struct hash_map*
         }
     }
 
+    if (repo->last_commit != NULL) free(repo->last_commit);
+    
+    strcpy(commit->parent_hash, "-");
+    strcpy(commit->hash, "0");
+    repo->last_commit = commit;
     // Close the directory
     closedir(dir);
+
+    return SUCCESS;
+}
+
+void custom_printf(const char *format, ...) {
+    char buffer[1024];  // Adjust the buffer size as needed
+    va_list args;
+    va_start(args, format);
+
+    // Use vsnprintf to format the string and store it in the buffer
+    int len = vsnprintf(buffer, sizeof(buffer), format, args);
+
+    // Check if vsnprintf was successful
+    if (len >= 0 && len < sizeof(buffer)) {
+        // Use write to print to stdout
+        write(STDOUT_FILENO, buffer, len);
+    }
+
+    va_end(args);
+}
+
+int make_commit(struct repository* repo, struct commit* commit) {
+    // step0: make the hash of the commit and link it with last commit
+    // constructing the hash
+    create_hash(commit->hash);
+
+    // mapping the commit hash
+    strcpy(commit->parent_hash, repo->last_commit->hash);
+    // step1: read changes file and the last commit files in hashmap
+    char track_path[MAX_PATH];
+    strcpy(track_path, repo->dir);
+    strcat(track_path, "/.vsync/tracked");
+    
+    DIR* tracked_dir = opendir(track_path);
+    if (tracked_dir == NULL)
+    {
+        logger(ERROR_TAG, "Can not make a commit without changes");
+        return FAIL;
+    }
+
+    closedir(tracked_dir);
+
+    strcat(track_path, "/track");
+    if (access(track_path, F_OK) != 0)
+    {
+        logger(ERROR_TAG, "Can not make a commit without changes");
+        return FAIL;
+    }
+
+
+    struct hash_map* file_changes_map = (struct hash_map*) malloc(sizeof(struct hash_map));
+    struct hash_map* last_commit = (struct hash_map*) malloc(sizeof(struct hash_map));
+
+    init_hash_map(file_changes_map);
+    init_hash_map(last_commit);
+
+    char last_commit_info_path[MAX_PATH];
+    strcpy(last_commit_info_path, repo->dir);
+    strcat(last_commit_info_path, "/.vsync/");
+    strcat(last_commit_info_path, commit->parent_hash);
+    strcat(last_commit_info_path, "/commit");
+    populate_hashmap_from_file(file_changes_map, track_path);
+    populate_hashmap_from_file(last_commit, last_commit_info_path);
+    /*
+        step2: traversal the last commit when comparing the changes
+        for creating the new commit
+        at end delete the changes files
+    */
+
+
+   // make the commit dir and open the info file
+   char new_commit_dir_path[MAX_PATH];
+   strcpy(new_commit_dir_path, repo->dir);
+   strcat(new_commit_dir_path, "/.vsync/");
+   strcat(new_commit_dir_path, commit->hash);
+
+    if (mkdir(new_commit_dir_path, 0777) != 0)
+    {
+        logger(ERROR_TAG, "Can not create the commit dir");
+        return FAIL;
+    }
+    
+    char new_commit_info_path[MAX_PATH];
+    strcpy(new_commit_info_path,new_commit_dir_path);
+    strcat(new_commit_info_path, "/commit");
+    FILE* new_commit_info_file = fopen(new_commit_info_path, "w");
+    if (new_commit_info_file == NULL)
+    {
+        logger(ERROR_TAG, "Can not create the info file for the new commit");
+        return FAIL;
+    }
+    
+    fprintf(new_commit_info_file, "%s\n", commit->parent_hash);
+    
+    for (int i = 0; i < TABLE_SIZE; i++)
+    {
+        struct key_value* current = last_commit->table[i];
+
+        while (current != NULL)
+        {
+            // copying from last commit to the new commit
+
+            // the source file
+            char source_path[MAX_PATH];
+            strcpy(source_path, repo->dir);
+            FILE* source_file;
+
+            char *hash =  get_value_from_key(file_changes_map, current->key);
+                
+            if (hash != NULL) {
+                strcat(source_path, "/.vsync/tracked/");
+                strcat(source_path, hash);
+            } else {
+                strcat(source_path, "/.vsync/");
+                strcat(source_path, commit->parent_hash);
+                strcat(source_path, "/");
+                strcat(source_path, current->value);
+                hash = current->value;
+            }
+            
+
+            source_file = fopen(source_path, "rb");
+            if (source_file == NULL)
+            {
+                logger(ERROR_TAG, "Can not open the source for copying");
+                fclose(new_commit_info_file);
+                return FAIL;
+            }
+            
+
+            // the destinantion file
+            char destination_path[MAX_PATH];
+            strcpy(destination_path, new_commit_dir_path);
+            strcat(destination_path, "/");
+            strcat(destination_path, hash);
+
+            
+            FILE* destination_file = fopen(destination_path, "wb");
+            if (destination_file == NULL)
+            {
+                logger(ERROR_TAG, "Can not open the destination file for writing");
+                fclose(source_file);
+                fclose(new_commit_info_file);
+                return FAIL;
+            }  
+
+            
+            // copying from source to destination
+            char buffer[1024];
+            size_t bytesRead;
+            while ((bytesRead = fread(buffer, 1, sizeof(buffer), source_file)) > 0) {
+                buffer[bytesRead] = 0;
+                fwrite(buffer, 1, bytesRead, destination_file);
+            }
+
+            // copying infos to new commmit info file
+            fprintf(new_commit_info_file, "%s %s\n", current->key, hash);
+            
+            fclose(destination_file);
+            fclose(source_file);
+
+            current = current->next;
+        }
+        
+    }
+    
+    // add the other changes
+    for (int i = 0; i < TABLE_SIZE; i++)
+    {
+        struct key_value* current = file_changes_map->table[i];     
+        while (current != NULL) {
+        
+            custom_printf("%p", current);
+            char* hash = get_value_from_key(last_commit, current->key);
+
+            if (hash == NULL)
+            {
+                
+                char source_path[MAX_PATH];
+                strcpy(source_path, repo->dir);
+                strcat(source_path, "/.vsync/tracked/");
+                strcat(source_path, current->value);
+                FILE* source_file = fopen(source_path, "rb");
+                if (source_file == NULL) {
+                    logger(ERROR_TAG, "Can not open the source for copying");
+                    fclose(new_commit_info_file);
+                    return FAIL;
+                }
+                
+
+                char destination_path[MAX_PATH];
+                strcpy(destination_path, repo->dir);
+                strcat(destination_path, "/.vsync/");
+                strcat(destination_path, commit->hash);
+                strcat(destination_path, current->value);
+                FILE* destination_file = fopen(destination_path, "wb");
+                if (destination_file == NULL) {
+                    logger(ERROR_TAG, "Can not open the destination file for writing");
+                    fclose(source_file);
+                    fclose(new_commit_info_file);
+                    return FAIL;
+                }  
+
+
+                // copying from source to destination
+                char buffer[1024];
+                size_t bytesRead;
+                while ((bytesRead = fread(buffer, 1, sizeof(buffer), source_file)) > 0) {
+                    fwrite(buffer, 1, bytesRead, destination_file);
+                }
+
+                // copying infos to new commmit info file
+                fprintf(new_commit_info_file, "%s %s", current->key, hash);
+
+                fclose(source_file);
+                fclose(destination_file);
+            }
+            
+            current = current->next;
+        }
+    }
+
+    fclose(new_commit_info_file);
+    clear_hash_map(last_commit);
+    clear_hash_map(file_changes_map);
 
     return SUCCESS;
 }

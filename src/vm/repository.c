@@ -1,5 +1,5 @@
 #include "../../include/vm/repository.h"
-#include "../../include/common.h"
+#include "../../include/vm/common.h"
 #include "../../include/vm/commit.h"
 #include "../../include/logging/logger.h"
 #include "../../include/vm/author.h"
@@ -64,8 +64,6 @@ int init_repo(struct repository* repo) {
 
     // make the first commit
     struct commit* commit = (struct commit*) malloc(sizeof(struct commit));
-    commit->hash = "0";
-    commit->parent_hash = "-";
     struct hash_map* map = (struct hash_map*)malloc(sizeof(struct hash_map));
 
     // craeting the commit dir
@@ -78,7 +76,7 @@ int init_repo(struct repository* repo) {
         logger(ERROR_TAG, "Can not create the initial commit dir");
         return FAIL;
     }
-
+    // TODO: refactor this (merge the code that copies files and the info commit file)
     // initiale commit made
     init_commit(repo, commit, map, repo->dir);
 
@@ -93,21 +91,14 @@ int init_repo(struct repository* repo) {
     for (int i = 0; i < TABLE_SIZE; i++) {
         struct key_value* current = map->table[i];
         while (current != NULL) {
-
-            // Add this to track file
-            char track_buffer[strlen(current->key) + strlen(current->value) + 2];
-            strcpy(track_buffer, current->key);
-            strcat(track_buffer, " ");
-            strcat(track_buffer, current->value);
-            strcat(track_buffer, "\n");
-            fprintf(commit_info_file, track_buffer);
+            fprintf(commit_info_file, "%s %s\n", current->key, current->value);
 
             current = current->next; // Move to the next entry in case of collisions
         }
     }
 
     fclose(commit_info_file);
-
+    clear_hash_map(map);
     return SUCCESS;
 }
 

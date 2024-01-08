@@ -4,16 +4,15 @@
 #include "file.h"
 #include "hashmap.h"
 #include "repository.h"
-#include <openssl/sha.h>
 
 #define HASH_LEN 2 * SHA256_DIGEST_LENGTH + 1
 #define TRACKED_DIR "tracked"
 
 
 struct commit {
-    char* hash;
+    char hash[HASH_LEN];
     struct author author;
-    char* parent_hash;
+    char parent_hash[HASH_LEN];
 };
 
 // TODO: show differences, commits history... and all related stuffs
@@ -29,6 +28,6 @@ int add_files(struct repository *repo, struct file_node* files);
 /**
  * Persist the commit and preparing for the next one
 */
-void add_commit(struct commit* commit);
+int make_commit(struct repository* repo, struct commit* commit);
 
 #endif

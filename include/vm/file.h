@@ -1,9 +1,8 @@
 #ifndef FILE_H
 #define FILE_H
-#include "./commit.h"
 #include <openssl/sha.h>
 
-#define MAX_PATH 128
+#define MAX_PATH 1024
 #define HASH_LEN 2 * SHA256_DIGEST_LENGTH + 1
 
 
