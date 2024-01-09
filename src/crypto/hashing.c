@@ -2,18 +2,25 @@
 #include "../../include/vm/commit.h"
 #include <stdio.h>
 #include <openssl/sha.h>
+#include <openssl/rand.h>
 #include <time.h>
 #include <stdlib.h>
 
-void generate_random_data(char *buffer, int length) {
+void generate_random_data(char *word, int length) {
     const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    size_t charset_size = sizeof(charset) - 1;
+    const size_t charset_size = sizeof(charset) - 1;
 
-    for (size_t i = 0; i < length; i++) {
-        buffer[i] = charset[rand() % charset_size];
+    for (int i = 0; i < length; i++) {
+        if (RAND_bytes((unsigned char *)&word[i], 1) != 1) {
+            fprintf(stderr, "Error generating random byte.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // Map the random byte to the charset
+        word[i] = charset[word[i] % charset_size];
     }
 
-    buffer[length] = '\0';  // Null-terminate the string
+    word[length] = '\0';  // Null-terminate the string
 }
 
 void generate_hash(const char *data, int length, unsigned char *hash) {

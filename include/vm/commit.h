@@ -11,23 +11,28 @@
 
 struct commit {
     char hash[HASH_LEN];
-    struct author author;
+    struct author* author;
     char parent_hash[HASH_LEN];
 };
 
 // TODO: show differences, commits history... and all related stuffs
 /**
- * create the first commit
+ * create the map for initial commmit
 */
-int init_commit(struct repository* repo, struct commit* commit, struct hash_map* map, const char* path);
+int make_init_map_repo(struct repository* repo, struct hash_map* map, const char* path);
 /**
  * Track files for a commit
 */
-int add_files(struct repository *repo, struct file_node* files);
-
+int add_changes(struct repository *repo, struct file_node* files);
+int make_changes(struct repository* repo, struct hash_map* map);
 /**
- * Persist the commit and preparing for the next one
+ * Persist the commit
 */
 int make_commit(struct repository* repo, struct commit* commit);
+
+/**
+ * creating a commit
+*/
+int create_commit(struct repository* repo, struct commit* commit, struct hash_map* map);
 
 #endif

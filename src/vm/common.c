@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include "../../include/crypto/hashing.h"
 
@@ -74,4 +75,22 @@ void create_hash(char* str) {
         sprintf(&str[2 * i], "%02x", hash[i]);
     }
     str[HASH_LEN] = 0;
+}
+
+
+void custom_printf(const char *format, ...) {
+    char buffer[1024];  // Adjust the buffer size as needed
+    va_list args;
+    va_start(args, format);
+
+    // Use vsnprintf to format the string and store it in the buffer
+    int len = vsnprintf(buffer, sizeof(buffer), format, args);
+
+    // Check if vsnprintf was successful
+    if (len >= 0 && len < sizeof(buffer)) {
+        // Use write to print to stdout
+        write(STDOUT_FILENO, buffer, len);
+    }
+
+    va_end(args);
 }

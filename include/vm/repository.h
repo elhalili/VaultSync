@@ -6,31 +6,32 @@
 #define LOG_FILE "/logs"
 #define MAX_REPOSITORY_FILE_INIT 1024
 #define MAX_CWD 4096
+#define MAX_REP_NAME 80
 
 #include "author.h"
+#include "file.h"
 
 // TODO : add remote related info
 struct repository {
+    char name[MAX_REP_NAME];
     struct author* author;
-    char dir[MAX_CWD];
+    char dir[MAX_PATH];
     struct commit* last_commit;
 };
 
 /**
- * create the initial content when initializing
-*/
-void init_repo_content(struct repository* repo, char* buffer);
-/**
- * creating a repository object
-*/
-struct repository* create_repo();
-/**
  * responsable for doing the initilization stuffs
 */
-int init_repo(struct repository* repo);
+int init_repo(struct repository* repo, struct author* author);
+
 /**
  * show status of tracked and untracked files in a given moment
 */
 int get_status(struct repository* repo);
+
+/**
+ * Write the repository file
+*/
+int write_repository_file(struct repository* repo);
 
 #endif

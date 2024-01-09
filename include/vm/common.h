@@ -12,4 +12,5 @@ int is_dir_exists(const char *parentDir, const char *targetDir);
 int is_contains(char** arr, char* str);
 void make_string(char* dest, const char* src, ...); 
 void create_hash(char* str);
+void custom_printf(const char *format, ...);
 #endif

@@ -10,8 +10,9 @@
 #define TABLE_SIZE 10
 
 struct key_value {
-    char key[MAX_PATH];
-    char value[HASH_LEN];
+    char path[MAX_PATH];
+    char raw_path[MAX_PATH];
+    char hash[HASH_LEN];
     // for collisions
     struct key_value* next;
 };
@@ -25,21 +26,21 @@ void init_hash_map(struct hash_map* map);
 /**
  * calculate a simple hash value for the key
 */
-unsigned int hash(const char* key);
+unsigned int hash(const char* path);
 
 /**
  * delete from hashmap
 */
-void delete_from_map(struct hash_map* map, const char* key);
+void delete_from_map(struct hash_map* map, const char* path);
 /**
  * insert a key-value pair into the hashmap
 */
-void insert_map(struct hash_map* map, const char* key, const char* value);
+void insert_map(struct hash_map* map, const char* path, const char* hash, const char* raw_path);
 
 /**
  * retrieve a value from the hashmap based on the key
 */
-char* get_value_from_key(struct hash_map* map, const char* key);
+char* get_hash_from_path(struct hash_map* map, const char* path);
 
 /**
  * free the memory used by the hash_map
@@ -49,6 +50,6 @@ void clear_hash_map(struct hash_map* map);
 /**
  * creating a hashmap from a given file
 */
-int populate_hashmap_from_file(struct hash_map* map, const char* filename);
+int populate_hashmap_from_file(struct hash_map* map, const char* raw_path, const char* filename);
 
 #endif
