@@ -93,3 +93,8 @@ int write_repository_file(struct repository* repo) {
 
     return SUCCESS;
 }
+
+int load_reposotory(struct repository* repo) {
+    // start looking for .vsync from the cwd, if not start recursively
+    return SUCCESS;
+}

@@ -34,4 +34,8 @@ int get_status(struct repository* repo);
 */
 int write_repository_file(struct repository* repo);
 
+/**
+ * Load repository informations
+*/
+int load_reposotory(struct repository* repo);
 #endif

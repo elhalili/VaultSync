@@ -20,6 +20,7 @@ struct commit {
  * create the map for initial commmit
 */
 int make_init_map_repo(struct repository* repo, struct hash_map* map, const char* path);
+
 /**
  * Track files for a commit
 */
