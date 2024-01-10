@@ -32,7 +32,17 @@ int make_commit(struct repository* repo, struct commit* commit);
 
 /**
  * creating a commit
+ * you give a repository and commit object and a hashmap and it create the 
+ * the commit dir and copying all data depending on the hashmap
 */
 int create_commit(struct repository* repo, struct commit* commit, struct hash_map* map);
 
+/**
+ * Give a full repository object and a an empty commit and it will create the commit
+*/
+int foo(struct repository* repo, struct author* author, struct commit* commit);
+/**
+ * Delete the tracked directory
+*/
+int delete_tracked_dir(struct repository* repo);
 #endif

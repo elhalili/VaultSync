@@ -133,7 +133,6 @@ int make_changes(struct repository* repo, struct hash_map* map) {
                 FILE* destination_file = fopen(destination_path, "wb");
 
                 if (changes_file == NULL) {
-                    custom_printf("raw: %s \n", current->raw_path);
                     logger(ERROR_TAG, "[make_changes] Can not open changes file");
                     return FAIL;            
                 }
@@ -487,5 +486,131 @@ int create_commit(struct repository* repo, struct commit* commit, struct hash_ma
 
     fclose(commit_file);
 
+    return SUCCESS;
+}
+
+
+int foo(struct repository* repo, struct author* author, struct commit* commit) {
+    create_hash(commit->hash);
+    strcpy(commit->parent_hash, repo->last_commit->hash);
+    commit->author = author;
+ 
+    // step1 looking at changes
+    // creating the hashmap
+    struct hash_map* changes_map = (struct hash_map*) malloc(sizeof(struct hash_map));
+    init_hash_map(changes_map);
+
+    char track_dir_path[MAX_PATH];
+    strcpy(track_dir_path, repo->dir);
+    strcat(track_dir_path, "/.vsync/tracked");
+
+    char track_file_path[MAX_PATH];
+    strcpy(track_file_path, track_dir_path);
+    strcat(track_file_path, "/track");
+    custom_printf("path : %s\n", track_file_path);
+
+    if ((access(track_file_path, F_OK) == 0) 
+    && (populate_hashmap_from_file(changes_map, track_dir_path, track_file_path) == FAIL)){
+        logger(ERROR_TAG, "[foo] Can not load changes to the map");
+        return FAIL;
+    }
+
+    // step2 looking for the last commit
+    char last_commit_dir_path[MAX_PATH];
+    char last_commit_file_path[MAX_PATH];
+
+    strcpy(last_commit_dir_path, repo->dir);
+    strcat(last_commit_dir_path, "/.vsync/");
+    strcat(last_commit_dir_path, repo->last_commit->hash);
+    
+    strcpy(last_commit_file_path, last_commit_dir_path);
+    strcat(last_commit_file_path, "/commit");
+
+    struct hash_map* last_commit_map = (struct hash_map*) malloc(sizeof(struct hash_map));
+    init_hash_map(last_commit_map);
+
+    if (populate_hashmap_from_file(last_commit_map, last_commit_dir_path, last_commit_file_path) == FAIL) {
+        logger(ERROR_TAG, "[foo] can not load commit file to the map");
+        return FAIL;
+    }
+    
+    // update changes and last commit
+    for (int i = 0; i < TABLE_SIZE; i++)
+    {
+        struct key_value* current = changes_map->table[i];
+        
+        while (current != NULL) {
+            char* hash = get_hash_from_path(last_commit_map, current->path);
+
+            if (hash != NULL)
+            {
+                delete_from_map(last_commit_map, current->path);
+            }
+            
+            insert_map(last_commit_map, current->path, current->hash, current->raw_path);
+
+            current = current->next;
+        }
+    }
+    
+    if (create_commit(repo, commit, last_commit_map) == FAIL)
+    {
+        logger(ERROR_TAG, "[foo] Can not create the commit");
+        return FAIL;
+    }
+    
+    clear_hash_map(last_commit_map);
+    clear_hash_map(changes_map);
+
+    repo->last_commit = commit;
+
+    if (write_repository_file(repo) == FAIL)
+    {
+        logger(ERROR_TAG, "[foo] Can not update the repository file");
+        return FAIL;
+    }
+    
+    if (delete_tracked_dir(repo) == FAIL)
+    {
+        logger(ERROR_TAG, "[foo] Can not delete old tracked files");
+        return FAIL;
+    }
+    
+    return SUCCESS;
+}
+
+int delete_tracked_dir(struct repository* repo) {
+    char tracked_dir_path[MAX_PATH];
+    strcpy(tracked_dir_path, repo->dir);
+    strcat(tracked_dir_path, "/.vsync/tracked");
+
+    DIR* tracked_dir = opendir(tracked_dir_path);
+    if (tracked_dir == NULL) return SUCCESS;
+    
+    struct dirent* entry;
+
+    while((entry = readdir(tracked_dir)) != NULL) {
+        if (strcmp(entry->d_name, ".") != 0
+            && strcmp(entry->d_name, "..") != 0) {
+            char file_path[MAX_PATH];
+            strcpy(file_path, tracked_dir_path);
+            strcat(file_path, "/");
+            strcat(file_path, entry->d_name);
+
+            if (remove(file_path) != 0) {
+                logger(ERROR_TAG, "[delete_tracked_dir]");
+                closedir(tracked_dir);
+                return FAIL;
+            }
+        }
+    }   
+
+    closedir(tracked_dir);
+
+    if (rmdir(tracked_dir_path) != 0) {
+        logger(ERROR_TAG, "[delete_tracked_dir]");
+        return FAIL;
+    }
+    
     return SUCCESS;
 }
