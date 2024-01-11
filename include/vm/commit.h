@@ -28,6 +28,7 @@ int add_changes(struct repository *repo, struct file_node* files);
 int make_changes(struct repository* repo, struct hash_map* map);
 /**
  * Persist the commit
+ * @deprecated
 */
 int make_commit(struct repository* repo, struct commit* commit);
 
@@ -46,4 +47,23 @@ int foo(struct repository* repo, struct author* author, struct commit* commit);
  * Delete the tracked directory
 */
 int delete_tracked_dir(struct repository* repo);
+
+/**
+ * Rollback to a commit
+*/
+int rollback(struct repository* repo, const char* commit_hash);
+
+/**
+ * Delete all files and repositories
+*/
+int reset_repo_dir(const char* path, const char* root_path);
+/**
+ * create the files contains in hashmap
+*/
+int make_rollback_commit(struct hash_map* map);
+/**
+ * Load a commit
+*/
+
+struct commit* load_commit(struct repository* repo, const char* hash);
 #endif

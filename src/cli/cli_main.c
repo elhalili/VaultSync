@@ -19,9 +19,8 @@ void run_cli(int argc, char const *argv[]) {
     if (argc < 2) {
         logger(INFO_TAG, "Invalid arguments, check --help");
         return;
-    }
-    
-    if (argc < 3) {
+    } 
+    else if (argc < 3) {
         if (strcmp(argv[1], ARG_INIT) == 0) {
             struct author* author = NULL;
             if ((author = load_author()) == NULL) {
@@ -51,7 +50,6 @@ void run_cli(int argc, char const *argv[]) {
                 return;            
             }
 
-            custom_printf("%p\n", repo->last_commit);
             if (foo(repo, author, new_commit) == SUCCESS) {
                 logger(INFO_TAG, "The commit has been done successfully");
             } 
@@ -65,6 +63,18 @@ void run_cli(int argc, char const *argv[]) {
             invalid_args();
             return;   
         }
+    } else if ((argc < 4) && strcmp(argv[1], ARG_ROLLBACK) == 0) {
+        struct repository* repo = NULL;
+        if ((repo = load_repository()) == NULL) {
+            logger(ERROR_TAG, "Can not getting the repo info");
+            return;            
+        }
+
+        if (rollback(repo, argv[2]) == SUCCESS) {
+            logger(INFO_TAG, "The rollback has been successfully done");
+        }
+
+        return;
     }
     
     if (strcmp(argv[1], ARG_ADD_CHANGES) == 0) {

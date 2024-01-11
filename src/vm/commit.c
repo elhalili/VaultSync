@@ -614,3 +614,243 @@ int delete_tracked_dir(struct repository* repo) {
     
     return SUCCESS;
 }
+
+int rollback(struct repository* repo, const char* commit_hash) {
+    // step1: check if the dir exists
+    char commit_dir_path[MAX_PATH];
+    strcpy(commit_dir_path, repo->dir);
+    strcat(commit_dir_path, "/.vsync/");
+    strcat(commit_dir_path, commit_hash);
+
+    DIR* commit_dir = opendir(commit_dir_path);
+
+    if (commit_dir == NULL) {
+        logger(ERROR_TAG, "[rollback] Commit not found");
+        return FAIL;
+    }
+    closedir(commit_dir);
+
+    // step2: check if the commit file is exists then populate a hashmap from it
+    struct hash_map* commit_map = (struct hash_map*)malloc(sizeof(struct hash_map));
+    init_hash_map(commit_map);
+    
+    char commit_file_path[MAX_PATH];
+    strcpy(commit_file_path, commit_dir_path);
+    strcat(commit_file_path, "/commit");
+    if (access(commit_file_path, F_OK) != 0) {
+        logger(ERROR_TAG, "[rollback] Can not found the commit file");
+        return FAIL;
+    }
+
+    if (populate_hashmap_from_file(commit_map, commit_dir_path, commit_file_path) == FAIL) {
+        logger(ERROR_TAG, "[rollback] Can not populate the hashmap from the file");
+        return FAIL;    
+    }
+    
+    // step3: delete all the files and directories
+    if (reset_repo_dir(repo->dir, repo->dir) == FAIL) {
+        logger(ERROR_TAG, "[rollback] Can not delete files from the repository");
+        return FAIL; 
+    }
+    
+    // step4: create from the map the files and start copying them
+    if (make_rollback_commit(commit_map) == FAIL) {
+        logger(ERROR_TAG, "[rollback] Can not rollback files from the commit");
+        return FAIL;     
+    }
+
+    // step5: update the repository file
+    struct commit* commit = NULL;
+    if ((commit = load_commit(repo, commit_hash)) == NULL) {
+        logger(ERROR_TAG, "[rollback] Can not load the commit");
+        return FAIL; 
+    }
+    
+    free(repo->last_commit);
+    repo->last_commit = commit;
+
+    if (write_repository_file(repo) == FAIL) {
+        logger(ERROR_TAG, "[rollback] Can not update the repository file");
+        return FAIL;
+    }
+    
+    return SUCCESS;
+}
+
+int reset_repo_dir(const char* path, const char* root_path) {
+    DIR* dir = opendir(path);
+
+    if (dir != NULL) {
+        struct dirent* entry;
+
+        while ((entry = readdir(dir)) != NULL) {
+            if (strcmp(entry->d_name, ".") != 0
+                && strcmp(entry->d_name, "..") != 0
+                && strcmp(entry->d_name, ".vsync") != 0) {
+                char full_path[PATH_MAX];
+                snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+                if (entry->d_type == DT_DIR) {
+                    // Recursively delete subdirectories
+                    if (reset_repo_dir(full_path, root_path) == FAIL) {
+                        closedir(dir);
+                        return FAIL;
+                    }
+                } else {
+                    // Delete regular files
+                    if (remove(full_path) != 0) {
+                        closedir(dir);
+                        return FAIL;
+                    }
+                }
+            }
+        }
+
+        closedir(dir);
+
+        // Remove the empty directory itself, but not the root directory
+        if (strcmp(path, root_path) != 0 && rmdir(path) != 0) {
+            return FAIL;
+        }
+
+        return SUCCESS;
+    }
+
+    return FAIL;
+}
+
+int make_rollback_commit(struct hash_map* map) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        struct key_value* current = map->table[i];
+
+        while (current != NULL) {
+            if (create_directories(current->path) == FAIL) {
+                logger(ERROR_TAG, "[make_rollback_commit] can not create directories for copying");
+                return FAIL;
+            }
+            
+
+            FILE* src_file = fopen(current->raw_path, "rb");
+            if (src_file == NULL) {
+                logger(ERROR_TAG, "[make_rollback_commit] can not open the raw file");
+                return FAIL;
+            }
+
+            if (create_directories(current->path) == FAIL) {
+                logger(ERROR_TAG, "[make_rollback_commit] can not creating dirs for dest file");
+                fclose(src_file);
+                return FAIL;    
+            }
+            
+            FILE* dest_file = fopen(current->path, "wb");
+            if (dest_file == NULL) {
+                logger(ERROR_TAG, "[make_rollback_commit] can not open the destination file");
+                fclose(src_file);
+                return FAIL;            
+            }
+            
+            // copying from source to destination
+            char buffer[1024];
+            size_t bytesRead;
+            while ((bytesRead = fread(buffer, 1, sizeof(buffer), src_file)) > 0) {
+                fwrite(buffer, 1, bytesRead, dest_file);
+            }
+
+            fclose(src_file);
+            fclose(dest_file);
+            current = current->next;
+        }
+    }
+
+    return SUCCESS;
+}
+
+
+int create_directories(const char* path) {
+    if (path == NULL || strcmp(path, "") == 0) {
+        return SUCCESS;  // Empty path, nothing to create
+    }
+
+    char* path_copy = strdup(path);
+    if (path_copy == NULL) {
+        return FAIL;  // Memory allocation failure
+    }
+
+    char* last_slash = strrchr(path_copy, '/');
+    if (last_slash != NULL) {
+        // Exclude the file part from the path
+        *last_slash = '\0';
+        if (strcmp(path_copy, "") == 0) return SUCCESS;
+        // Recursively create parent directories
+        int parent_result = create_directories(path_copy);
+        if (parent_result != 0) {
+            free(path_copy);
+            return parent_result;  // Propagate failure from parent directory creation
+        }
+
+        // Check if the directory already exists
+        struct stat st;
+        if (stat(path_copy, &st) != 0) {
+            // Directory does not exist, create it
+
+            if (mkdir(path_copy, 0777) != 0) {
+                free(path_copy);
+                return FAIL;  // Failed to create directory
+            }
+        }
+    }
+
+    free(path_copy);
+    return SUCCESS;  // Success
+}
+
+
+
+struct commit* load_commit(struct repository* repo, const char* hash) {
+
+    char commit_file_path[MAX_PATH];
+    strcpy(commit_file_path, repo->dir);
+    strcat(commit_file_path, "/.vsync/");
+    strcat(commit_file_path, hash);
+    strcat(commit_file_path, "/commit");
+
+    FILE* commit_file = fopen(commit_file_path, "r");
+
+    if (commit_file == NULL) {
+        logger(ERROR_TAG, "[load_commit] Commit no found");
+        return NULL;
+    }
+
+    struct commit* commit = (struct commit*) malloc(sizeof(struct commit));
+    strcpy(commit->hash, hash);
+
+    struct author* author = (struct author*) malloc(sizeof(struct author));
+
+    char line[MAX_PATH];
+    fgets(line, MAX_PATH, commit_file);
+    line[strlen(line) - 1] = 0;
+
+    strcpy(commit->parent_hash, line);
+
+    fgets(line, MAX_PATH, commit_file);
+    line[strlen(line) - 1] = 0;
+
+    char* spacePos = strchr(line, ' ');
+    if (spacePos == NULL) {
+        logger(ERROR_TAG, "[load_commit] Author of commit not found");
+        free(commit);
+        free(author);
+        fclose(commit_file);
+        return NULL;
+    }
+    *spacePos = 0;
+
+    strcpy(author->username, line);
+    strcpy(author->mail, spacePos + 1);
+
+
+    commit->author = author;
+    
+
+    return commit;
+}

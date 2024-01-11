@@ -6,6 +6,7 @@
 #define ARG_HELP_SC "-h"
 #define ARG_ADD_CHANGES "add"
 #define ARG_COMMIT "commit"
+#define ARG_ROLLBACK "rollback"
 
 void run_cli(int argc, char const *argv[]);
 void getting_help();
