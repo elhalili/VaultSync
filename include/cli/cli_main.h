@@ -8,5 +8,7 @@
 #define ARG_COMMIT "commit"
 
 void run_cli(int argc, char const *argv[]);
+void getting_help();
+void invalid_args();
 
 #endif

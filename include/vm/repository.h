@@ -37,5 +37,9 @@ int write_repository_file(struct repository* repo);
 /**
  * Load repository informations
 */
-int load_reposotory(struct repository* repo);
+struct repository* load_repository();
+/**
+ * Load an author
+*/
+struct author* load_author();
 #endif
