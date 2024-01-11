@@ -4,8 +4,8 @@
 #define MAX_MAIL 100
 
 struct author {
-    char* username;
-    char* mail;
+    char username[MAX_UNAME];
+    char mail[MAX_MAIL];
 };
 
 #endif

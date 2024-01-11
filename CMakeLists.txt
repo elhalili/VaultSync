@@ -51,7 +51,7 @@ set(TEST_SOURCES
 add_executable(vaultsync_tests ${UNITY_SOURCES} ${TEST_SOURCES})
 
 # Link the test executable with the library
-target_link_libraries(vaultsync_tests PRIVATE vaultsync_lib)
+target_link_libraries(vaultsync_tests PRIVATE vaultsync_lib OpenSSL::SSL OpenSSL::Crypto)
 
 # Add tests
 add_test(NAME vaultsync_tests COMMAND vaultsync_tests)

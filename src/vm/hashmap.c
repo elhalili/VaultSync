@@ -3,59 +3,65 @@
 #include <string.h>
 #include "../../include/vm/hashmap.h"
 #include "../../include/logging/logger.h"
-#include "../../include/common.h"
+#include "../../include/vm/common.h"
 
-unsigned int hash(const char* key) {
+
+void init_hash_map(struct hash_map* map) {
+    for (int i = 0; i < TABLE_SIZE; i++)
+    {
+        map->table[i] = NULL;
+    }
+    
+}
+
+
+unsigned int hash(const char* path) {
     unsigned int hash_value = 0;
-    for (int i = 0; i < strlen(key); ++i) {
-        hash_value = hash_value * 31 + key[i];
+    for (int i = 0; i < strlen(path); ++i) {
+        hash_value = hash_value * 31 + path[i];
     }
 
     return hash_value % TABLE_SIZE;
 }
 
-void insert_map(struct hash_map* map, const char* key, const char* value) {
-    unsigned int index = hash(key);
+void insert_map(struct hash_map* map, const char* path, const char* hash_string, const char* raw_path) {
+    unsigned int index = hash(path);
 
     struct key_value* newNode = (struct key_value*)malloc(sizeof(struct key_value));
 
     // Ensure that the size of newNode->key and newNode->value can accommodate the strings
-    strncpy(newNode->key, key, MAX_PATH - 1);
-    newNode->key[MAX_PATH - 1] = '\0';  // Set null terminator
-
-    
-    strncpy(newNode->value, value, HASH_LEN - 1);
-    newNode->value[HASH_LEN - 1] = '\0';  // Set null terminator
+    strcpy(newNode->path, path);
+    strcpy(newNode->hash, hash_string);
+    strcpy(newNode->raw_path, raw_path);
 
     newNode->next = map->table[index];
     map->table[index] = newNode;
 }
 
 
-char* get_value_from_key(struct hash_map* map, const char* key) {
-    unsigned int index = hash(key);
-    
-    struct key_value* current = map->table[index];
-    while (current != NULL) {
+char* get_hash_from_path(struct hash_map* map, const char* path) {
+    unsigned int index = hash(path);
 
-        if (strcmp(current->key, key) == 0) {
-            return current->value;
+    struct key_value* current = map->table[index];
+    while (current != NULL) {  
+        if (strcmp(current->path, path) == 0) {
+    
+            return current->hash;
         }
         current = current->next;
     }
-
      
     return NULL;
 }
 
-void delete_from_map(struct hash_map* map, const char* key) {
-    unsigned int index = hash(key);
+void delete_from_map(struct hash_map* map, const char* path) {
+    unsigned int index = hash(path);
 
     struct key_value* current = map->table[index];
     struct key_value* previous = NULL;
 
     while (current != NULL) {
-        if (strcmp(current->key, key) == 0) {
+        if (strcmp(current->path, path) == 0) {
             if (previous == NULL) {
                 map->table[index] = current->next;
             } else {
@@ -72,7 +78,7 @@ void delete_from_map(struct hash_map* map, const char* key) {
 }
 
 void clear_hash_map(struct hash_map* map) {
-    for (int i = 0; i < TABLE_SIZE; ++i) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
         struct key_value* current = map->table[i];
         while (current != NULL) {
             struct key_value* temp = current;
@@ -84,14 +90,16 @@ void clear_hash_map(struct hash_map* map) {
 }
 
 
-int populate_hashmap_from_file(struct hash_map* map, const char* filename) {
+int populate_hashmap_from_file(struct hash_map* map, const char* raw_path, const char* filename) {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
-        logger(ERROR_TAG, "Can not open track file");
+        logger(ERROR_TAG, "Can not populate a hashmap from such as this file");
         return FAIL;
     }
 
     char line[HASH_LEN + 1 + MAX_PATH];
+    fgets(line, sizeof(line), file);
+    fgets(line, sizeof(line), file);
     while (fgets(line, sizeof(line), file) != NULL) {
         char* spacePos = strchr(line, ' ');
         if (spacePos != NULL) {
@@ -100,9 +108,15 @@ int populate_hashmap_from_file(struct hash_map* map, const char* filename) {
             char* hash = spacePos + 1;
             hash[strlen(hash) - 1] = '\0';  // Remove the newline character
 
-            insert_map(map, path, hash);
+            char src_file_path[MAX_PATH];
+            strcpy(src_file_path, raw_path);
+            strcat(src_file_path, "/");
+            strcat(src_file_path, hash);
+
+            insert_map(map, path, hash, src_file_path);
         }
     }
 
     fclose(file);
+    return SUCCESS;
 }
