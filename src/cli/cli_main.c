@@ -50,7 +50,7 @@ void run_cli(int argc, char const *argv[]) {
                 return;            
             }
 
-            if (foo(repo, author, new_commit) == SUCCESS) {
+            if (make_commit(repo, author, new_commit) == SUCCESS) {
                 logger(INFO_TAG, "The commit has been done successfully");
             } 
 

@@ -201,216 +201,6 @@ int make_init_map_repo(struct repository* repo, struct hash_map* map, const char
 }
 
 
-int make_commit(struct repository* repo, struct commit* commit) {
-    // step0: make the hash of the commit and link it with last commit
-    // constructing the hash
-    create_hash(commit->hash);
-
-    // mapping the commit hash
-    strcpy(commit->parent_hash, repo->last_commit->hash);
-    // step1: read changes file and the last commit files in hashmap
-    char track_path[MAX_PATH];
-    strcpy(track_path, repo->dir);
-    strcat(track_path, "/.vsync/tracked");
-    
-    DIR* tracked_dir = opendir(track_path);
-    if (tracked_dir == NULL)
-    {
-        logger(ERROR_TAG, "Can not make a commit without changes");
-        return FAIL;
-    }
-
-    closedir(tracked_dir);
-
-    strcat(track_path, "/track");
-    if (access(track_path, F_OK) != 0)
-    {
-        logger(ERROR_TAG, "Can not make a commit without changes");
-        return FAIL;
-    }
-
-
-    struct hash_map* file_changes_map = (struct hash_map*) malloc(sizeof(struct hash_map));
-    struct hash_map* last_commit = (struct hash_map*) malloc(sizeof(struct hash_map));
-
-    init_hash_map(file_changes_map);
-    init_hash_map(last_commit);
-
-    char last_commit_info_path[MAX_PATH];
-    strcpy(last_commit_info_path, repo->dir);
-    strcat(last_commit_info_path, "/.vsync/");
-    strcat(last_commit_info_path, commit->parent_hash);
-    strcat(last_commit_info_path, "/commit");
-    // populate_hashmap_from_file(file_changes_map, track_path);
-    // populate_hashmap_from_file(last_commit, last_commit_info_path);
-    /*
-        step2: traversal the last commit when comparing the changes
-        for creating the new commit
-        at end delete the changes files
-    */
-
-
-   // make the commit dir and open the info file
-   char new_commit_dir_path[MAX_PATH];
-   strcpy(new_commit_dir_path, repo->dir);
-   strcat(new_commit_dir_path, "/.vsync/");
-   strcat(new_commit_dir_path, commit->hash);
-
-    if (mkdir(new_commit_dir_path, 0777) != 0)
-    {
-        logger(ERROR_TAG, "Can not create the commit dir");
-        return FAIL;
-    }
-    
-    char new_commit_info_path[MAX_PATH];
-    strcpy(new_commit_info_path,new_commit_dir_path);
-    strcat(new_commit_info_path, "/commit");
-    FILE* new_commit_info_file = fopen(new_commit_info_path, "w");
-    if (new_commit_info_file == NULL)
-    {
-        logger(ERROR_TAG, "Can not create the info file for the new commit");
-        return FAIL;
-    }
-    
-    fprintf(new_commit_info_file, "%s\n", commit->parent_hash);
-    
-    for (int i = 0; i < TABLE_SIZE; i++)
-    {
-        struct key_value* current = last_commit->table[i];
-
-        while (current != NULL)
-        {
-            // copying from last commit to the new commit
-
-            // the source file
-            char source_path[MAX_PATH];
-            strcpy(source_path, repo->dir);
-            FILE* source_file;
-
-            char *hash =  get_hash_from_path(file_changes_map, current->hash);
-                
-            if (hash != NULL) {
-                strcat(source_path, "/.vsync/tracked/");
-                strcat(source_path, hash);
-            } else {
-                strcat(source_path, "/.vsync/");
-                strcat(source_path, commit->parent_hash);
-                strcat(source_path, "/");
-                strcat(source_path, current->hash);
-                hash = current->hash;
-            }
-            
-
-            source_file = fopen(source_path, "rb");
-            if (source_file == NULL)
-            {
-                logger(ERROR_TAG, "Can not open the source for copying");
-                fclose(new_commit_info_file);
-                return FAIL;
-            }
-            
-
-            // the destinantion file
-            char destination_path[MAX_PATH];
-            strcpy(destination_path, new_commit_dir_path);
-            strcat(destination_path, "/");
-            strcat(destination_path, hash);
-
-            
-            FILE* destination_file = fopen(destination_path, "wb");
-            if (destination_file == NULL)
-            {
-                logger(ERROR_TAG, "Can not open the destination file for writing");
-                fclose(source_file);
-                fclose(new_commit_info_file);
-                return FAIL;
-            }  
-
-            
-            // copying from source to destination
-            char buffer[1024];
-            size_t bytesRead;
-            while ((bytesRead = fread(buffer, 1, sizeof(buffer), source_file)) > 0) {
-                buffer[bytesRead] = 0;
-                fwrite(buffer, 1, bytesRead, destination_file);
-            }
-
-            // copying infos to new commmit info file
-            fprintf(new_commit_info_file, "%s %s\n", current->path, hash);
-            
-            fclose(destination_file);
-            fclose(source_file);
-
-            current = current->next;
-        }
-        
-    }
-    
-    // add the other changes
-    for (int i = 0; i < TABLE_SIZE; i++)
-    {
-        struct key_value* current = file_changes_map->table[i];     
-        while (current != NULL) {
-        
-            char* hash = get_hash_from_path(last_commit, current->path);
-
-            if (hash == NULL)
-            {
-                
-                char source_path[MAX_PATH];
-                strcpy(source_path, repo->dir);
-                strcat(source_path, "/.vsync/tracked/");
-                strcat(source_path, current->hash);
-                FILE* source_file = fopen(source_path, "rb");
-                if (source_file == NULL) {
-                    logger(ERROR_TAG, "Can not open the source for copying");
-                    fclose(new_commit_info_file);
-                    return FAIL;
-                }
-                
-
-                char destination_path[MAX_PATH];
-                strcpy(destination_path, repo->dir);
-                strcat(destination_path, "/.vsync/");
-                strcat(destination_path, commit->hash);
-                strcat(destination_path, current->hash);
-                FILE* destination_file = fopen(destination_path, "wb");
-                if (destination_file == NULL) {
-                    logger(ERROR_TAG, "Can not open the destination file for writing");
-                    fclose(source_file);
-                    fclose(new_commit_info_file);
-                    return FAIL;
-                }  
-
-
-                // copying from source to destination
-                char buffer[1024];
-                size_t bytesRead;
-                while ((bytesRead = fread(buffer, 1, sizeof(buffer), source_file)) > 0) {
-                    fwrite(buffer, 1, bytesRead, destination_file);
-                }
-
-                // copying infos to new commmit info file
-                fprintf(new_commit_info_file, "%s %s", current->path, hash);
-
-                fclose(source_file);
-                fclose(destination_file);
-            }
-            
-            current = current->next;
-        }
-    }
-
-    fclose(new_commit_info_file);
-    clear_hash_map(last_commit);
-    clear_hash_map(file_changes_map);
-    
-    // add the last commit info to repository file
-
-    return SUCCESS;
-}
-
-
 int create_commit(struct repository* repo, struct commit* commit, struct hash_map* map) {
     // create the commit dir
     char commit_path[MAX_PATH];
@@ -490,7 +280,7 @@ int create_commit(struct repository* repo, struct commit* commit, struct hash_ma
 }
 
 
-int foo(struct repository* repo, struct author* author, struct commit* commit) {
+int make_commit(struct repository* repo, struct author* author, struct commit* commit) {
     create_hash(commit->hash);
     strcpy(commit->parent_hash, repo->last_commit->hash);
     commit->author = author;
@@ -511,7 +301,7 @@ int foo(struct repository* repo, struct author* author, struct commit* commit) {
 
     if ((access(track_file_path, F_OK) == 0) 
     && (populate_hashmap_from_file(changes_map, track_dir_path, track_file_path) == FAIL)){
-        logger(ERROR_TAG, "[foo] Can not load changes to the map");
+        logger(ERROR_TAG, "[make_commit] Can not load changes to the map");
         return FAIL;
     }
 
@@ -530,7 +320,7 @@ int foo(struct repository* repo, struct author* author, struct commit* commit) {
     init_hash_map(last_commit_map);
 
     if (populate_hashmap_from_file(last_commit_map, last_commit_dir_path, last_commit_file_path) == FAIL) {
-        logger(ERROR_TAG, "[foo] can not load commit file to the map");
+        logger(ERROR_TAG, "[make_commit] can not load commit file to the map");
         return FAIL;
     }
     
@@ -555,7 +345,7 @@ int foo(struct repository* repo, struct author* author, struct commit* commit) {
     
     if (create_commit(repo, commit, last_commit_map) == FAIL)
     {
-        logger(ERROR_TAG, "[foo] Can not create the commit");
+        logger(ERROR_TAG, "[make_commit] Can not create the commit");
         return FAIL;
     }
     
@@ -566,13 +356,13 @@ int foo(struct repository* repo, struct author* author, struct commit* commit) {
 
     if (write_repository_file(repo) == FAIL)
     {
-        logger(ERROR_TAG, "[foo] Can not update the repository file");
+        logger(ERROR_TAG, "[make_commit] Can not update the repository file");
         return FAIL;
     }
     
     if (delete_tracked_dir(repo) == FAIL)
     {
-        logger(ERROR_TAG, "[foo] Can not delete old tracked files");
+        logger(ERROR_TAG, "[make_commit] Can not delete old tracked files");
         return FAIL;
     }
     

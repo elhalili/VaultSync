@@ -26,11 +26,6 @@ int make_init_map_repo(struct repository* repo, struct hash_map* map, const char
 */
 int add_changes(struct repository *repo, struct file_node* files);
 int make_changes(struct repository* repo, struct hash_map* map);
-/**
- * Persist the commit
- * @deprecated
-*/
-int make_commit(struct repository* repo, struct commit* commit);
 
 /**
  * creating a commit
@@ -42,7 +37,7 @@ int create_commit(struct repository* repo, struct commit* commit, struct hash_ma
 /**
  * Give a full repository object and a an empty commit and it will create the commit
 */
-int foo(struct repository* repo, struct author* author, struct commit* commit);
+int make_commit(struct repository* repo, struct author* author, struct commit* commit);
 /**
  * Delete the tracked directory
 */
