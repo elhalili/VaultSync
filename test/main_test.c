@@ -75,7 +75,7 @@ void made_commit() {
 
 
     struct commit* new_commit = (struct commit*) malloc(sizeof(struct commit));
-    if (foo(repo, author, new_commit) == SUCCESS) {
+    if (make_commit(repo, author, new_commit) == SUCCESS) {
         printf("Commit done\n");
     }
 }
