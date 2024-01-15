@@ -1,9 +1,9 @@
 #ifndef CLI_VM_H
 #define CLI_VM_H
 
-int init_repository();
-int track_change(char* files);
-void getting_help();
-int commit_changes();
+void init_repository();
+void track_changes(int n, char const *files[]);
+void commit_changes();
+void rollback_changes(const char* hash);
 
 #endif

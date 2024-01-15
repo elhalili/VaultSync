@@ -3,7 +3,9 @@
 
 #define MAX_PATH 1024
 
-
+/**
+ * LinkedList of files
+*/
 struct file_node {
     char path[MAX_PATH];
     struct file_node* next;

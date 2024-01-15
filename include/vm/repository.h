@@ -35,9 +35,10 @@ int get_status(struct repository* repo);
 int write_repository_file(struct repository* repo);
 
 /**
- * Load repository informations
+ * Load repository info
 */
 struct repository* load_repository();
+
 /**
  * Load an author
 */

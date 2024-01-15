@@ -8,7 +8,9 @@
 #define HASH_LEN 2 * SHA256_DIGEST_LENGTH + 1
 #define TRACKED_DIR "tracked"
 
-
+/**
+ * Commit structure 
+*/
 struct commit {
     char hash[HASH_LEN];
     struct author* author;
@@ -17,14 +19,18 @@ struct commit {
 
 // TODO: show differences, commits history... and all related stuffs
 /**
- * create the map for initial commmit
+ * create a hashmap contains all the current files for the initialization
 */
 int make_init_map_repo(struct repository* repo, struct hash_map* map, const char* path);
 
 /**
- * Track files for a commit
+ * Keep tracking files for the next commit
 */
 int add_changes(struct repository *repo, struct file_node* files);
+
+/**
+ * create a hashmap contains the tracked files
+*/
 int make_changes(struct repository* repo, struct hash_map* map);
 
 /**
@@ -38,6 +44,7 @@ int create_commit(struct repository* repo, struct commit* commit, struct hash_ma
  * Give a full repository object and a an empty commit and it will create the commit
 */
 int make_commit(struct repository* repo, struct author* author, struct commit* commit);
+
 /**
  * Delete the tracked directory
 */
@@ -52,13 +59,14 @@ int rollback(struct repository* repo, const char* commit_hash);
  * Delete all files and repositories
 */
 int reset_repo_dir(const char* path, const char* root_path);
+
 /**
  * create the files contains in hashmap
 */
 int make_rollback_commit(struct hash_map* map);
+
 /**
  * Load a commit
 */
-
 struct commit* load_commit(struct repository* repo, const char* hash);
 #endif
