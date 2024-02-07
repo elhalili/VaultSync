@@ -3,13 +3,18 @@
 # Define the environment variable for the configuration file path
 export VSYNC_CONFIG_PATH=~/.vsync_rc
 
+# Remove existing installation if present
+if [ -f "/usr/local/bin/vaultsync" ]; then
+    sudo rm /usr/local/bin/vaultsync
+fi
+
+# Move back to the project root directory
 cd ..
 
 # Check if build directory exists, if not, create it
 if [ ! -d "build" ]; then
     mkdir -p build
 fi
-
 
 # Build the C project CLI
 cd build
@@ -44,4 +49,3 @@ if [ -f ~/.zshrc ]; then
 fi
 
 echo "Setup complete. Restart your shell or run 'source ~/.bashrc' or 'source ~/.zshrc'."
-
