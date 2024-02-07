@@ -4,11 +4,11 @@ This project offers robust version tracking capabilities, ensuring that every ch
 
 ### Key Features:
 
-- **Comprehensive Version History**: Every modification made to your files is meticulously recorded, providing a detailed history of changes over time.
+- **Comprehensive Version tracking**: Every modification made to your files you can record it.
   
-- **Effortless Rollback**: Need to revert to a previous version? No problem! Our tool allows users to effortlessly roll back to any desired version with just a few clicks or commands.
+- **Effortless Rollback**: Need to revert to a previous version? No problem! Our tool allows users to effortlessly roll back to any desired version with one command.
   
-- **Intuitive User Interface**: Navigating through the version history and initiating rollbacks is made simple and intuitive, ensuring a seamless user experience.
+- **Intuitive Command Line Interface**: Initialization, tracking of changes, record them and rollbacks are made simple and intuitive, ensuring a seamless user experience.
 
 ### Supported Operations:
 
