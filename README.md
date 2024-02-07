@@ -19,7 +19,10 @@ This project offers robust version tracking capabilities, ensuring that every ch
 ### Installing:
 To install this project ....
 ```bash
-	$ sudo ./setup.sh
+	$ git clone git@github.com:elhalili/VaultSync.git
+	$ cd VaultSync
+	$ chmod +x scripts/setup.sh
+	$ ./scripts/setup.sh
 ```
 
 ### Usage:
