@@ -48,7 +48,7 @@ To take advantage of the version tracking and rollback features, simply follow t
 4. If you ever need to revert to a previous version, use the rollback command to select the desired version and restore it.
 ```bash
 	# Rollback to any version 
-	vaultsync commit version-hash
+	vaultsync rollback version-hash
 ```
 
 With our version tracking and rollback capabilities, you can collaborate with confidence, knowing that your files are always protected and easily recoverable.
