@@ -24,6 +24,53 @@ make
 # Copy the executable to a location in PATH
 sudo cp vaultsync /usr/local/bin
 
+# Create the manual page
+cat > vaultsync.1 << 'EOF'
+.\" Manpage for vaultsync
+.TH vaultsync 1 "February 2024" "Version 1.0" "vaultsync Manual"
+
+.SH NAME
+vaultsync \- CLI tool for managing repositories
+
+.SH SYNOPSIS
+vaultsync [\fIOPTION\fR]... [\fICOMMAND\fR]...
+
+.SH DESCRIPTION
+Vaultsync is a command line tool for managing repositories.
+
+.SH OPTIONS
+\fB\-h, \-\-help\fR
+    Show help message and exit.
+
+.SH COMMANDS
+\fBinit\fR
+    Initialize a repository.
+
+\fBcommit\fR
+    Make a commit.
+
+\fBadd\fR \fI[files]\fR
+    Add files to be tracked in the next commit.
+
+.SH AUTHOR
+Written by Your Name.
+
+.SH SEE ALSO
+vaultsync.conf(5)
+
+.SH BUGS
+Report bugs to: amine.elhalili1@gmail.com
+EOF
+
+# Install the manual page
+if [ -f "/usr/share/man/man1/vaultsync.1" ]; then
+    sudo rm /usr/share/man/man1/vaultsync.1
+fi
+sudo cp vaultsync.1 /usr/share/man/man1/
+
+# Update Manpage Database
+sudo mandb
+
 # Prompt for username
 read -p "Enter your username: " username
 
@@ -49,3 +96,4 @@ if [ -f ~/.zshrc ]; then
 fi
 
 echo "Setup complete. Restart your shell or run 'source ~/.bashrc' or 'source ~/.zshrc'."
+

@@ -43,13 +43,15 @@ void run_cli(int argc, char const *argv[]) {
     invalid_args();
 }
 
-void getting_help() {
-    printf("The help guide: \n");
-    printf("%s,%s: for getting help\n", ARG_HELP_SC, ARG_HELP);
-    printf("%s: initialize a repository\n", ARG_INIT);
-    printf("%s: for made a commit\n", ARG_COMMIT);
-    printf("%s [files]: add files to be tracked in the next commit\n", ARG_ADD_CHANGES);
-    printf("End\n");
+void getting_help() {    
+    printf("Usage: vaultsync [OPTIONS] COMMAND\n\n");
+    printf("Options:\n");
+    printf("  -h, --help     Show help message and exit\n\n");
+    printf("Commands:\n");
+    printf("  init           Initialize a repository\n");
+    printf("  commit         Make a commit\n");
+    printf("  add [files]    Add files to be tracked in the next commit\n\n");
+    printf("For more information, see 'man vaultsync'\n");
 }
 
 void invalid_args() {
