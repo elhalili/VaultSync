@@ -3,6 +3,22 @@
 # Define the environment variable for the configuration file path
 export VSYNC_CONFIG_PATH=~/.vsync_rc
 
+cd ..
+
+# Check if build directory exists, if not, create it
+if [ ! -d "build" ]; then
+    mkdir -p build
+fi
+
+
+# Build the C project CLI
+cd build
+cmake ..
+make
+
+# Copy the executable to a location in PATH
+sudo cp vaultsync /usr/local/bin
+
 # Prompt for username
 read -p "Enter your username: " username
 
@@ -28,3 +44,4 @@ if [ -f ~/.zshrc ]; then
 fi
 
 echo "Setup complete. Restart your shell or run 'source ~/.bashrc' or 'source ~/.zshrc'."
+
