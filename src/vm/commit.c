@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <stdarg.h>
 
 
 int add_changes(struct repository *repo, struct file_node* files) {
@@ -297,7 +296,6 @@ int make_commit(struct repository* repo, struct author* author, struct commit* c
     char track_file_path[MAX_PATH];
     strcpy(track_file_path, track_dir_path);
     strcat(track_file_path, "/track");
-    custom_printf("path : %s\n", track_file_path);
 
     if ((access(track_file_path, F_OK) == 0) 
     && (populate_hashmap_from_file(changes_map, track_dir_path, track_file_path) == FAIL)){
