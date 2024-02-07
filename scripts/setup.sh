@@ -53,7 +53,7 @@ Vaultsync is a command line tool for managing repositories.
     Add files to be tracked in the next commit.
 
 .SH AUTHOR
-Written by Your Name.
+Written by Your Amine EL HALILI.
 
 .SH SEE ALSO
 vaultsync.conf(5)
