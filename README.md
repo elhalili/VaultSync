@@ -19,10 +19,10 @@ This project offers robust version tracking capabilities, ensuring that every ch
 ### Installing:
 To install this project ....
 ```bash
-	$ git clone git@github.com:elhalili/VaultSync.git
-	$ cd VaultSync
-	$ chmod +x scripts/setup.sh
-	$ ./scripts/setup.sh
+git clone git@github.com:elhalili/VaultSync.git
+cd VaultSync
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 
 ### Usage:
@@ -30,25 +30,25 @@ To install this project ....
 To take advantage of the version tracking and rollback features, simply follow these steps:
 1. Initialize the repository using the provided CLI.
 ```bash
-	# Change the cwd to the desired directory project
-	cd path/to/your-project
-	# Initialize the project
-	vaultsync init
+# Change the cwd to the desired directory project
+cd path/to/your-project
+# Initialize the project
+vaultsync init
 ```
 2. Make changes to your files as needed, knowing that every modification is being tracked in the background.
 ```bash
-	# Track changes using
-	vaultsync add [files-paths-to-track]
+# Track changes using
+vaultsync add [files-paths-to-track]
 ```
 3. Register stable changes via commit :
 ```bash
-	# Commit changes
-	vaultsync commit
+# Commit changes
+vaultsync commit
 ```
 4. If you ever need to revert to a previous version, use the rollback command to select the desired version and restore it.
 ```bash
-	# Rollback to any version 
-	vaultsync rollback version-hash
+# Rollback to any version 
+vaultsync rollback version-hash
 ```
 
 With our version tracking and rollback capabilities, you can collaborate with confidence, knowing that your files are always protected and easily recoverable.
