@@ -103,7 +103,7 @@ int make_changes(struct repository* repo, struct hash_map* map) {
     char track_dir_path[MAX_PATH];
     strcpy(track_dir_path, repo->dir);
     strcat(track_dir_path, "/.vsync/tracked");
-    strcat(track_file_path, track_dir_path);
+    strcpy(track_file_path, track_dir_path);
     strcat(track_file_path, "/track");
 
     FILE* track_file = fopen(track_file_path, "w");
